@@ -1,14 +1,11 @@
 package com.bignerdranch.android.photogallery;
 
 import android.os.Bundle;
-import android.os.PersistableBundle;
 import android.support.annotation.LayoutRes;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v7.app.AppCompatActivity;
-
-import com.bignerdranch.android.photogallery.R;
 
 /**
  * Created by Garry on 27/04/2017.
