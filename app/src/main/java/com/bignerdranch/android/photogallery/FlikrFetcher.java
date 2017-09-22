@@ -13,6 +13,7 @@ import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -53,7 +54,10 @@ public class FlikrFetcher {
         return new String(getUrlBytes(urlSpec));
     }
 
-    public void fetchitems() {
+    public List<GalleryItem> fetchitems() {
+
+        List<GalleryItem> items = new ArrayList<>();
+
         try{
             String url = Uri.parse("https://api.flickr.com/services/rest/")
                     .buildUpon()
@@ -65,12 +69,15 @@ public class FlikrFetcher {
                     .build().toString();
             String jsonString = getUrlString(url);
             JSONObject jsonBody = new JSONObject(jsonString);
+            parseItems(items, jsonBody);
             Log.i(TAG, "Received JSON: " + jsonString);
         } catch (IOException ioe){
             ioe.printStackTrace();
         } catch (JSONException e) {
             Log.e(TAG, "Failed to parse Json");
         }
+
+        return items;
     }
 
     private void parseItems(List<GalleryItem> items, JSONObject jsonBody) throws JSONException {
