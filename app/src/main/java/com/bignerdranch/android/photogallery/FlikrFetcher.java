@@ -25,6 +25,9 @@ public class FlikrFetcher {
     private static final String TAG = FlikrFetcher.class.getSimpleName();
     private static final String API_KEY = "a01d7e4fb5100a32ff60c4b89454c715";
 
+    private static int pageIndex;
+    private static int pageCount;
+
     public byte[] getUrlBytes(String urlSpec) throws IOException {
         URL url = new URL(urlSpec);
         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
@@ -66,6 +69,7 @@ public class FlikrFetcher {
                     .appendQueryParameter("format", "json")
                     .appendQueryParameter("nojsoncallback", "1")
                     .appendQueryParameter("extras", "url_s")
+                    .appendQueryParameter("page", String.valueOf(pageIndex))
                     .build().toString();
             String jsonString = getUrlString(url);
             JSONObject jsonBody = new JSONObject(jsonString);
@@ -75,6 +79,8 @@ public class FlikrFetcher {
             ioe.printStackTrace();
         } catch (JSONException e) {
             Log.e(TAG, "Failed to parse Json");
+        } finally {
+            pageIndex ++;
         }
 
         return items;
@@ -83,6 +89,7 @@ public class FlikrFetcher {
     private void parseItems(List<GalleryItem> items, JSONObject jsonBody) throws JSONException {
         JSONObject photosJsonObject = jsonBody.getJSONObject("photos");
         JSONArray photosJsonArray = photosJsonObject.getJSONArray("photo");
+        pageCount = Integer.parseInt(photosJsonObject.getString("pages"));
 
         for (int i = 0; i < photosJsonArray.length(); i++) {
             JSONObject photoJsonObject = photosJsonArray.getJSONObject(i);
@@ -98,5 +105,13 @@ public class FlikrFetcher {
             item.setUrl(photoJsonObject.getString("url_s"));
             items.add(item);
         }
+    }
+
+    public static int getPageCount() {
+        return pageCount;
+    }
+
+    public static int getPageIndex() {
+        return pageIndex;
     }
 }
