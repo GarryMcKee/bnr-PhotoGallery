@@ -3,6 +3,8 @@ package com.bignerdranch.android.photogallery;
 import android.net.Uri;
 import android.util.Log;
 
+import com.google.gson.Gson;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -81,21 +83,22 @@ public class FlikrFetcher {
     }
 
     private void parseItems(List<GalleryItem> items, JSONObject jsonBody) throws JSONException {
+        Gson gson = new Gson();
         JSONObject photosJsonObject = jsonBody.getJSONObject("photos");
         JSONArray photosJsonArray = photosJsonObject.getJSONArray("photo");
 
         for (int i = 0; i < photosJsonArray.length(); i++) {
             JSONObject photoJsonObject = photosJsonArray.getJSONObject(i);
-
-            GalleryItem item = new GalleryItem();
-            item.setId(photoJsonObject.getString("id"));
-            item.setCaption(photoJsonObject.getString("title"));
+            GalleryItem item = gson.fromJson(photoJsonObject.toString(), GalleryItem.class);
+           // GalleryItem item = new GalleryItem();
+            //item.setId(photoJsonObject.getString("id"));
+            //item.setTitle(photoJsonObject.getString("title"));
 
             if(!photoJsonObject.has("url_s")) {
                 continue;
             }
 
-            item.setUrl(photoJsonObject.getString("url_s"));
+            //item.setUrl_s(photoJsonObject.getString("url_s"));
             items.add(item);
         }
     }
