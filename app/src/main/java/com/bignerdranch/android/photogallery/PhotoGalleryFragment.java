@@ -10,6 +10,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
 import android.widget.TextView;
 
 import java.io.IOException;
@@ -23,6 +24,8 @@ import java.util.List;
 public class PhotoGalleryFragment extends Fragment {
 
     private static final String TAG = PhotoGalleryFragment.class.getSimpleName();
+    private static final int COL_WIDTH = 360;
+    private static boolean colsSet = false;
 
     private RecyclerView mPhotoRecyclerView;
     private List<GalleryItem> mItems = new ArrayList<>();
@@ -35,7 +38,6 @@ public class PhotoGalleryFragment extends Fragment {
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setRetainInstance(true);
-        new FetchItemsTask().execute();
     }
 
     @Nullable
@@ -45,9 +47,28 @@ public class PhotoGalleryFragment extends Fragment {
 
         mPhotoRecyclerView = v.findViewById(R.id.photo_recycler_view);
         mPhotoRecyclerView.setLayoutManager(new GridLayoutManager(getActivity(), 3));
+        mPhotoRecyclerView.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+            @Override
+            public void onGlobalLayout() {
+                if(!colsSet) {
+                    int colCount = mPhotoRecyclerView.getWidth()/COL_WIDTH;
+                    Log.d(TAG, "Width: " + mPhotoRecyclerView.getWidth());
+                    Log.d(TAG, "ColCount = " + colCount);
+                    mPhotoRecyclerView.setLayoutManager(new GridLayoutManager(getActivity(), colCount));
+                    colsSet = true;
+                }
+
+            }
+        });
 
         setupAdapter();
         return v;
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        new FetchItemsTask().execute();
     }
 
     private void setupAdapter() {
