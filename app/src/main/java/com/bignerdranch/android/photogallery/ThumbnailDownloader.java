@@ -85,6 +85,11 @@ public class ThumbnailDownloader<T> extends HandlerThread {
 
             byte[] bitmapBytes = new FlikrFetcher().getUrlBytes(url);
             final Bitmap bitmap = BitmapFactory.decodeByteArray(bitmapBytes, 0 , bitmapBytes.length);
+
+            if(BitmapCache.getInstance().getBitmap(url) == null) {
+                BitmapCache.getInstance().addBitmap(url, bitmap);
+            }
+
             Log.i(TAG, "BitmapCreated");
 
             mResponseHandler.post(new Runnable() {

@@ -28,10 +28,13 @@ import java.util.List;
 public class PhotoGalleryFragment extends Fragment {
 
     private static final String TAG = PhotoGalleryFragment.class.getSimpleName();
+    private static final int PRELOAD_PREVIOUS_LIMIT = 10;
+    private static final int PRELOAD_NEXT_LIMIT = 10;
 
     private RecyclerView mPhotoRecyclerView;
     private List<GalleryItem> mItems = new ArrayList<>();
     private ThumbnailDownloader<PhotoHolder> mThumbnailDownloader;
+    private ThumbnailPreloader mThumbnailPreloader;
 
     public static PhotoGalleryFragment newInstance() {
         return new PhotoGalleryFragment();
@@ -54,7 +57,12 @@ public class PhotoGalleryFragment extends Fragment {
         });
         mThumbnailDownloader.start();
         mThumbnailDownloader.getLooper();
-        Log.d(TAG, "Background Thread started");
+
+        mThumbnailPreloader = new ThumbnailPreloader("Preload");
+        mThumbnailPreloader.start();
+        mThumbnailPreloader.getLooper();
+
+        Log.d(TAG, "Background Threads started");
     }
 
     @Nullable
@@ -73,12 +81,14 @@ public class PhotoGalleryFragment extends Fragment {
     public void onDestroyView() {
         super.onDestroyView();
         mThumbnailDownloader.clearQueue();
+        mThumbnailPreloader.clearQueue();
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
         mThumbnailDownloader.quit();
+        mThumbnailPreloader.quit();
         Log.i(TAG, "Background Thread destroyed");
     }
 
@@ -99,6 +109,18 @@ public class PhotoGalleryFragment extends Fragment {
         protected void onPostExecute(List<GalleryItem> galleryItems) {
             mItems = galleryItems;
             setupAdapter();
+        }
+    }
+
+    private class PreloadItemsTask extends AsyncTask<List<GalleryItem>, Void, Void> {
+
+        @Override
+        protected Void doInBackground(List<GalleryItem>... lists) {
+            List<GalleryItem> preLoaditems = lists[0];
+            for(GalleryItem item : preLoaditems) {
+                mThumbnailPreloader.preLoadThumbnails(item.getUrl());
+            }
+            return null;
         }
     }
 
@@ -136,8 +158,38 @@ public class PhotoGalleryFragment extends Fragment {
         public void onBindViewHolder(PhotoHolder holder, int position) {
             GalleryItem item = mGalleryItems.get(position);
             Drawable placeholder = getResources().getDrawable(R.drawable.bill_up_close);
-            holder.bindDrawable(placeholder);
-            mThumbnailDownloader.queueThumbnail(holder, item.getUrl());
+            preLoadBitMaps(position);
+            if(BitmapCache.getInstance().getBitmap(item.getUrl()) != null) {
+                Log.i(TAG, "Bitmap in cache");
+                Bitmap bitmap = BitmapCache.getInstance().getBitmap(item.getUrl());
+                Drawable thumbnail = new BitmapDrawable(getResources(), bitmap);
+                holder.bindDrawable(thumbnail);
+            } else {
+                holder.bindDrawable(placeholder);
+                mThumbnailDownloader.queueThumbnail(holder, item.getUrl());
+            }
+
+        }
+
+        private void preLoadBitMaps(int currentItem) {
+            int preloadTo;
+            int preLoadFrom;
+            if(currentItem + PRELOAD_NEXT_LIMIT >= mGalleryItems.size()-1) {
+                preloadTo = mGalleryItems.size()-1;
+            } else {
+                preloadTo = currentItem + PRELOAD_NEXT_LIMIT;
+            }
+
+            if( currentItem - PRELOAD_PREVIOUS_LIMIT <= 0) {
+                preLoadFrom = 0;
+            } else {
+                preLoadFrom = currentItem - PRELOAD_PREVIOUS_LIMIT;
+            }
+
+            Log.i(TAG, "Preloading bitmaps from : " + preLoadFrom + " to: " + preloadTo);
+
+            List<GalleryItem> items = mGalleryItems.subList(preLoadFrom, preloadTo);
+            new PreloadItemsTask().execute(items);
         }
 
         @Override
