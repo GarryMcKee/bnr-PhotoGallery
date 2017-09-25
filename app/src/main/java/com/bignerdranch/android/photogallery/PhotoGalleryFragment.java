@@ -15,9 +15,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
-import android.widget.TextView;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -92,7 +90,13 @@ public class PhotoGalleryFragment extends Fragment {
 
         @Override
         protected List<GalleryItem> doInBackground(Void... voids) {
-            return new FlikrFetcher().fetchitems();
+            String query = "robot";
+
+            if (query == null) {
+                return new FlikrFetcher().fetchRecentPhotos();
+            } else {
+                return new FlikrFetcher().searchPhotos(query);
+            }
         }
 
         @Override
