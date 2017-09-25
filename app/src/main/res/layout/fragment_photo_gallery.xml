@@ -1,8 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
-<android.support.v7.widget.RecyclerView
-    xmlns:android= "http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/photo_recycler_view"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    tools:context=".PhotoGalleryActivity"/>
+<RelativeLayout xmlns:android= "http://schemas.android.com/apk/res/android"
+                xmlns:tools="http://schemas.android.com/tools"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent">
+
+    <android.support.v7.widget.RecyclerView
+        android:id="@+id/photo_recycler_view"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        tools:context=".PhotoGalleryActivity"/>
+
+    <ProgressBar
+        android:id="@+id/loading_progress_bar"
+        android:layout_width="75dp"
+        android:layout_height="75dp"
+        android:layout_centerInParent="true"
+        android:visibility="gone"
+        />
+
+</RelativeLayout>

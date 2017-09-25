@@ -24,6 +24,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -38,6 +39,7 @@ public class PhotoGalleryFragment extends Fragment {
 
     private RecyclerView mPhotoRecyclerView;
     private List<GalleryItem> mItems = new ArrayList<>();
+    private ProgressBar mProgressBar;
     private ThumbnailDownloader<PhotoHolder> mThumbnailDownloader;
 
     public static PhotoGalleryFragment newInstance() {
@@ -49,7 +51,6 @@ public class PhotoGalleryFragment extends Fragment {
         super.onCreate(savedInstanceState);
         setRetainInstance(true);
         setHasOptionsMenu(true);
-        updateItems();
 
         Handler responseHandler = new Handler();
         mThumbnailDownloader = new ThumbnailDownloader<>(responseHandler);
@@ -60,8 +61,6 @@ public class PhotoGalleryFragment extends Fragment {
                 target.bindDrawable(drawable);
             }
         });
-        mThumbnailDownloader.start();
-        mThumbnailDownloader.getLooper();
         Log.d(TAG, "Background Thread started");
     }
 
@@ -72,8 +71,12 @@ public class PhotoGalleryFragment extends Fragment {
 
         mPhotoRecyclerView = v.findViewById(R.id.photo_recycler_view);
         mPhotoRecyclerView.setLayoutManager(new GridLayoutManager(getActivity(), 3));
+        mProgressBar = v.findViewById(R.id.loading_progress_bar);
 
         setupAdapter();
+        updateItems();
+        mThumbnailDownloader.start();
+        mThumbnailDownloader.getLooper();
         return v;
     }
 
@@ -159,6 +162,13 @@ public class PhotoGalleryFragment extends Fragment {
         }
 
         @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            mProgressBar.setVisibility(View.VISIBLE);
+            mPhotoRecyclerView.setVisibility(View.GONE);
+        }
+
+        @Override
         protected List<GalleryItem> doInBackground(Void... voids) {
 
             if (mQuery == null) {
@@ -172,6 +182,8 @@ public class PhotoGalleryFragment extends Fragment {
         protected void onPostExecute(List<GalleryItem> galleryItems) {
             mItems = galleryItems;
             setupAdapter();
+            mProgressBar.setVisibility(View.INVISIBLE);
+            mPhotoRecyclerView.setVisibility(View.VISIBLE);
         }
     }
 
