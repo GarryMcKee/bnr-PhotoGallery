@@ -1,10 +1,16 @@
 package com.bignerdranch.android.photogallery;
 
+import android.app.job.JobInfo;
+import android.app.job.JobScheduler;
+import android.app.job.JobService;
+import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.annotation.Nullable;
@@ -12,6 +18,7 @@ import android.support.v4.app.Fragment;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.SearchView;
+import android.system.Os;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -23,6 +30,8 @@ import android.widget.ImageView;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import static android.os.Build.VERSION_CODES.LOLLIPOP;
 
 /**
  * Created by Garry on 20/09/2017.
@@ -119,11 +128,16 @@ public class PhotoGalleryFragment extends Fragment {
         });
 
         MenuItem toggleItem = menu.findItem(R.id.menu_item_toggle_polling);
-        if(PollService.isServiceAlarmOn(getActivity())) {
-            toggleItem.setTitle(R.string.stop_polling);
+        if(Build.VERSION.SDK_INT < LOLLIPOP) {
+            if(PollService.isServiceAlarmOn(getActivity())) {
+                toggleItem.setTitle(R.string.stop_polling);
+            } else {
+                toggleItem.setTitle(R.string.start_polling);
+            }
         } else {
-            toggleItem.setTitle(R.string.start_polling);
+
         }
+
     }
 
     @Override
@@ -134,8 +148,29 @@ public class PhotoGalleryFragment extends Fragment {
                 updateItems();
                 return true;
             case R.id.menu_item_toggle_polling:
-                boolean shouldStartAlarm = !PollService.isServiceAlarmOn(getActivity());
-                PollService.setServiceAlarm(getActivity(), shouldStartAlarm);
+                if(Build.VERSION.SDK_INT < LOLLIPOP) {
+                    boolean shouldStartAlarm = !PollService.isServiceAlarmOn(getActivity());
+                    PollService.setServiceAlarm(getActivity(), shouldStartAlarm);
+                } else {
+                    JobScheduler scheduler = (JobScheduler) getContext().getSystemService(Context.JOB_SCHEDULER_SERVICE);
+
+                    for(JobInfo info : scheduler.getAllPendingJobs()) {
+                        if(info.getId() == PollJobService.JOB_ID) {
+                            scheduler.cancel(PollJobService.JOB_ID);
+                            return true;
+                        }
+                    }
+                    JobInfo info = new JobInfo.Builder(
+                            PollJobService.JOB_ID, new ComponentName(getContext(), PollJobService.class))
+                            .setRequiredNetworkType(JobInfo.NETWORK_TYPE_UNMETERED)
+                            .setPeriodic(1000 * 60 * 15)
+                            .setPersisted(true)
+                            .build();
+
+                    scheduler.schedule(info);
+
+                }
+
                 getActivity().invalidateOptionsMenu();
                 return true;
             default:
